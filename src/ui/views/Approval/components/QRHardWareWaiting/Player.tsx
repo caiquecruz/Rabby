@@ -23,30 +23,45 @@ const Player = ({
   playerSize,
   layoutStyle = 'compact',
 }: IProps) => {
+  const [interval, setIntervalValue] = useState(100);
+  const [maxFragmentLength, setMaxFragmentLength] = useState(200);
+  const [qrSize, setQRSize] = useState(playerSize ?? 180);
+  const [level, setLevel] = useState('L');
+
   const urEncoder = useMemo(
     // For NGRAVE ZERO support please keep to a maximum fragment size of 200
-    () => new UREncoder(new UR(Buffer.from(cbor, 'hex'), type), 200),
-    [cbor, type]
+    () =>
+      new UREncoder(new UR(Buffer.from(cbor, 'hex'), type), maxFragmentLength),
+    [cbor, type, maxFragmentLength]
   );
   const [currentQRCode, setCurrentQRCode] = useState(urEncoder.nextPart());
   const { t } = useTranslation();
+
+  const handleLevelChange = (event) => {
+    setLevel(event.target.value);
+  };
+
   useEffect(() => {
     const id = setInterval(() => {
       setCurrentQRCode(urEncoder.nextPart());
-    }, 100);
+    }, interval);
     return () => {
       clearInterval(id);
     };
-  }, [urEncoder]);
+  }, [urEncoder, interval, level]);
 
   if (brandName == WALLET_BRAND_TYPES.NGRAVEZERO) {
     brandName = 'NGRAVE ZERO';
   }
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center" style={{ height: '100%' }}>
       <div className="p-[5px] border border-gray-divider rounded-[8px] bg-white">
-        <QRCode value={currentQRCode.toUpperCase()} size={playerSize ?? 180} />
+        <QRCode
+          value={currentQRCode.toUpperCase()}
+          size={qrSize}
+          level={level}
+        />
       </div>
       <p
         className={clsx(
@@ -61,6 +76,100 @@ const Player = ({
           }}
         ></Trans>
       </p>
+
+      <div
+        style={{
+          paddingBottom: '16px',
+          paddingLeft: '16px',
+          paddingRight: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          QR Code Interval ({interval} ms)
+        </div>
+        <input
+          type="range"
+          min="10"
+          max="1000"
+          step="10"
+          value={interval}
+          onChange={(e) => setIntervalValue(Number(e.target.value))}
+        />
+        <div style={{ textAlign: 'center' }}>
+          Max Fragment Length {maxFragmentLength}
+        </div>
+        <input
+          type="range"
+          min="10"
+          max="1500"
+          step="1"
+          value={maxFragmentLength}
+          onChange={(e) => setMaxFragmentLength(Number(e.target.value))}
+        />
+        <div style={{ textAlign: 'center' }}>QR Code Size {qrSize}</div>
+        <input
+          type="range"
+          min="10"
+          max="500"
+          step="1"
+          value={qrSize}
+          onChange={(e) => setQRSize(Number(e.target.value))}
+        />
+        <div
+          style={{
+            paddingTop: '16px',
+            paddingBottom: '16px',
+            paddingLeft: '16px',
+            paddingRight: '16px',
+          }}
+        >
+          <div style={{ textAlign: 'center' }}>Error Correction Level</div>
+          <>
+            <input
+              type="radio"
+              id="levelL"
+              name="level"
+              value="L"
+              checked={level === 'L'}
+              onChange={handleLevelChange}
+            />
+            <label htmlFor="levelL">Low (L)</label>
+            <br />
+            <input
+              type="radio"
+              id="levelM"
+              name="level"
+              value="M"
+              checked={level === 'M'}
+              onChange={handleLevelChange}
+            />
+            <label htmlFor="levelM">Medium (M)</label>
+            <br />
+            <input
+              type="radio"
+              id="levelQ"
+              name="level"
+              value="Q"
+              checked={level === 'Q'}
+              onChange={handleLevelChange}
+            />
+            <label htmlFor="levelQ">Quartile (Q)</label>
+            <br />
+            <input
+              type="radio"
+              id="levelH"
+              name="level"
+              value="H"
+              checked={level === 'H'}
+              onChange={handleLevelChange}
+            />
+            <label htmlFor="levelH">High (H)</label>
+          </>
+        </div>
+      </div>
 
       <Button
         onClick={onSign}
